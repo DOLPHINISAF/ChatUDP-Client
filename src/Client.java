@@ -48,7 +48,7 @@ public class Client {
     JButton message;
     JButton quit;
     JList userList;
-
+    JScrollPane userlistscrollpane;
     Vector<String> users;
     Vector<ChatWindow> chatWindows;
 
@@ -59,6 +59,7 @@ public class Client {
         manager.start();
         users = new Vector<String>(16);
         chatWindows = new Vector<>(4);
+        users.add("");
     }
 
     public static void main(String[] args) {
@@ -85,12 +86,12 @@ public class Client {
                    default -> {System.out.println("Received unknown packet");}
                }
 
-               for(ChatWindow chats : client.chatWindows){
-                   if(!chats.messageToSend.isEmpty()){
-                       client.SendMessage(chats.connectionName, chats.messageToSend);
-                       chats.messageToSend = "";
-                   }
-               }
+               //for(ChatWindow chats : client.chatWindows){
+               //    if(!chats.messageToSend.isEmpty()){
+               //        client.SendMessage(chats.connectionName, chats.messageToSend);
+               //        chats.messageToSend = "";
+               //    }
+               //}
 
                client.manager.packetReceived = false;
            }
@@ -222,12 +223,12 @@ public class Client {
         frame.setLocation(200,300);
 
 
-        JScrollPane userlistscrollpane = new JScrollPane(userList);
+
 
         userList.setLayoutOrientation(JList.VERTICAL);
         userList.setVisibleRowCount(3);
 
-
+        userlistscrollpane = new JScrollPane(userList);
         message.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -265,6 +266,7 @@ public class Client {
         }
     }
     private void HandleAddUser(DatagramPacket packet){
+        System.out.println("Received adduser packet");
         //structura unui pachet de tip remove user trebuie sa fie:
         //data[0]- tipul de pachet
         //data[1]- lungimea numelui de adaugat
@@ -274,17 +276,20 @@ public class Client {
         String name = new String(data,2,data[1]);
 
         users.add(name);
+        userList.updateUI();
         userList.repaint();
+        System.out.println("Added new user to list " + name);
     }
     private void HandleRemoveUser(DatagramPacket packet){
+        System.out.println("Received removeuser packet");
         //structura unui pachet de tip remove user trebuie sa fie:
         //data[0]- tipul de pachet
         //data[1]- lungimea numelui de sters
         //data[2]- inceputul numelui
         String removedUserName = new String(packet.getData(),2,packet.getData()[1]);
-            for(String name : users){
-                if(name.equals(removedUserName)){
-                        users.remove(name);
+            for(int i = 0; i < users.size(); i++){
+                if(users.get(i).equals(removedUserName)){
+                        users.remove(i);
                         userList.repaint();
                 }
             }
