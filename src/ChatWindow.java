@@ -3,15 +3,15 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class ChatWindow extends Thread {
+public class ChatWindow{
 
     JFrame frame;
     JTextArea chatArea;
     JTextArea inputArea;
     JButton send;
-    public volatile String connectionName;
+    public String connectionName;
 
-    public volatile String messageToSend;
+    public String messageToSend;
     ChatWindow(String name){
         connectionName = name;
         frame = new JFrame("Chat with " + name);
@@ -19,6 +19,7 @@ public class ChatWindow extends Thread {
         inputArea = new JTextArea("");
         send = new JButton("Send Message");
         DrawChatWindow();
+        messageToSend = "";
 
     }
 
@@ -43,6 +44,7 @@ public class ChatWindow extends Thread {
             public void actionPerformed(ActionEvent e) {
                 messageToSend = inputArea.getText();
                 chatArea.append("Me:" + messageToSend + "\n");
+                inputArea.setText("");
             }
         });
 
@@ -57,11 +59,6 @@ public class ChatWindow extends Thread {
         frame.pack();
         frame.setVisible(true);
     }
-
-    public void run(){
-
-    }
-
     public void AddMessage(String messsage, String srcName){
         chatArea.append(srcName + " :" + messsage + "\n");
     }

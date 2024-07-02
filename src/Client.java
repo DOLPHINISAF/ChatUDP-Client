@@ -48,7 +48,7 @@ public class Client {
     JButton message;
     JButton quit;
     JList userList;
-
+    DefaultListModel listmodel;
     Vector<String> users;
     Vector<ChatWindow> chatWindows;
 
@@ -58,7 +58,8 @@ public class Client {
         manager = new ConnectionManager();
         manager.start();
         users = new Vector<String>(16);
-        chatWindows = new Vector<>(4);
+        chatWindows = new Vector<ChatWindow>(8);
+
     }
 
     public static void main(String[] args) {
@@ -85,17 +86,22 @@ public class Client {
                    default -> {System.out.println("Received unknown packet");}
                }
 
-               for(ChatWindow chats : client.chatWindows){
-                   if(!chats.messageToSend.isEmpty()){
-                       client.SendMessage(chats.connectionName, chats.messageToSend);
-                       chats.messageToSend = "";
-                   }
-               }
+
 
                client.manager.packetReceived = false;
            }
 
+           if(client.chatWindows.size() > 0) {
+               for (int i = 0; i < client.chatWindows.size(); i++) {
 
+                   if (!client.chatWindows.get(i).messageToSend.isEmpty()) {
+                       System.out.println("SEnding message " + client.chatWindows.get(i).messageToSend);
+                       client.SendMessage(client.chatWindows.get(i).connectionName, client.chatWindows.get(i).messageToSend);
+                       client.chatWindows.get(i).messageToSend = "";
+                   }
+
+               }
+           }
        }
        client.Disconnect();
 
@@ -135,7 +141,7 @@ public class Client {
         JTextField numeChat = new JTextField();
         ip.setText("192.168.1.104");
         port.setText("1337");
-        numeChat.setText("name");
+        numeChat.setText("cata");
         final JComponent[] optiuni = new JComponent[]{
                 new JLabel("IP:"),
                 ip,
@@ -214,19 +220,14 @@ public class Client {
         frame = new JFrame("Menu");
         quit = new JButton("Disconnect");
         message = new JButton("Message");
-        userList = new JList<String>(users);
-
-        GridLayout layout = new GridLayout(3,1,0,20);
-
-        frame.setLayout(layout);
-        frame.setLocation(200,300);
-
-
-        JScrollPane userlistscrollpane = new JScrollPane(userList);
-
+        listmodel = new DefaultListModel<String>();
+        userList = new JList(listmodel);
         userList.setLayoutOrientation(JList.VERTICAL);
         userList.setVisibleRowCount(3);
 
+        GridLayout layout = new GridLayout(3,1,0,20);
+
+        JScrollPane userlistscrollpane = new JScrollPane(userList);
 
         message.addActionListener(new ActionListener() {
             @Override
@@ -245,11 +246,11 @@ public class Client {
             }
         });
 
-
+        frame.setLayout(layout);
+        frame.setLocation(200,300);
         frame.add(userlistscrollpane);
         frame.add(message);
         frame.add(quit);
-
         frame.pack();
         frame.setVisible(true);
     }
@@ -273,8 +274,8 @@ public class Client {
 
         String name = new String(data,2,data[1]);
 
+        listmodel.addElement(name);
         users.add(name);
-        userList.repaint();
     }
     private void HandleRemoveUser(DatagramPacket packet){
         //structura unui pachet de tip remove user trebuie sa fie:
@@ -282,12 +283,13 @@ public class Client {
         //data[1]- lungimea numelui de sters
         //data[2]- inceputul numelui
         String removedUserName = new String(packet.getData(),2,packet.getData()[1]);
-            for(String name : users){
-                if(name.equals(removedUserName)){
-                        users.remove(name);
-                        userList.repaint();
-                }
+        for(int i = 0; i < users.size(); i++){
+            if(users.get(i).equals(removedUserName)){
+                listmodel.removeElementAt(i);
+                users.remove(i);
             }
+        }
+
     }
 
     private void SendMessage(String destName, String message){
@@ -302,9 +304,9 @@ public class Client {
 
         data[0] = PacketType.toInt(PacketType.MESSAGE);
         data[1] = (byte) destName.length();
-        System.arraycopy(destName.getBytes(),0,data,2,destName.length());
-        data[1 + destName.length()] = (byte) message.length();
-        System.arraycopy(message.getBytes(),0,data,2 + destName.length(),message.length());
+        System.arraycopy(destName.getBytes(),0,data,2,destName.length());//inseram numele
+        data[2 + destName.length()] = (byte) message.length();
+        System.arraycopy(message.getBytes(),0,data,3 + destName.length(),message.length());
 
         DatagramPacket packet = new DatagramPacket(data,data.length,server_addr,SERVER_PORT);
         try {
@@ -315,7 +317,6 @@ public class Client {
             System.out.println("Failed to send message trough socket");
         }
     }
-
 
     private static String GetMessageFromPacket(byte[] data){
         final int messageLengthOffset = data[1] + 2;
