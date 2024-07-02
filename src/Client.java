@@ -275,6 +275,8 @@ public class Client {
 
         users.add(name);
         userList.repaint();
+
+        System.out.println("Added new user to list " + name);
     }
     private void HandleRemoveUser(DatagramPacket packet){
         //structura unui pachet de tip remove user trebuie sa fie:
@@ -282,9 +284,9 @@ public class Client {
         //data[1]- lungimea numelui de sters
         //data[2]- inceputul numelui
         String removedUserName = new String(packet.getData(),2,packet.getData()[1]);
-            for(String name : users){
-                if(name.equals(removedUserName)){
-                        users.remove(name);
+            for(int i = 0; i < users.size(); i++){
+                if(users.get(i).equals(removedUserName)){
+                        users.remove(i);
                         userList.repaint();
                 }
             }
