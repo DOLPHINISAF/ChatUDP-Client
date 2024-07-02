@@ -3,11 +3,11 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 public class Client {
     private enum PacketType{
@@ -52,6 +52,15 @@ public class Client {
     Vector<String> users;
     Vector<ChatWindow> chatWindows;
 
+    Client(){
+        clientIsRunning = true;
+        SERVER_PORT = 0;
+        manager = new ConnectionManager();
+        manager.start();
+        users = new Vector<String>(16);
+        chatWindows = new Vector<>(4);
+    }
+
     public static void main(String[] args) {
         Client client = new Client();
         if(!client.Conectare()) {
@@ -94,14 +103,7 @@ public class Client {
 
     }
 
-    Client(){
-        clientIsRunning = true;
-        SERVER_PORT = 0;
-        manager = new ConnectionManager();
-        manager.start();
-        users = new Vector<String>(16);
-        chatWindows = new Vector<>(4);
-    }
+
     //all 3 used to establish connection with a server
     public boolean Conectare() {
         //[0]- IP server; [1]- PORT server; [2]- nume ales client
@@ -263,25 +265,41 @@ public class Client {
         }
     }
     private void HandleAddUser(DatagramPacket packet){
+        //structura unui pachet de tip remove user trebuie sa fie:
+        //data[0]- tipul de pachet
+        //data[1]- lungimea numelui de adaugat
+        //data[2]- inceputul numelui
         byte[] data = packet.getData();
 
         String name = new String(data,2,data[1]);
 
         users.add(name);
-        userList.updateUI();
+        userList.repaint();
     }
     private void HandleRemoveUser(DatagramPacket packet){
+        //structura unui pachet de tip remove user trebuie sa fie:
+        //data[0]- tipul de pachet
+        //data[1]- lungimea numelui de sters
+        //data[2]- inceputul numelui
         String removedUserName = new String(packet.getData(),2,packet.getData()[1]);
-            for(String i : users){
-                if(i.equals(removedUserName)){
-                        users.remove(i);
-                        userList.updateUI();
+            for(String name : users){
+                if(name.equals(removedUserName)){
+                        users.remove(name);
+                        userList.repaint();
                 }
             }
     }
 
     private void SendMessage(String destName, String message){
         byte[] data = new byte[32];
+
+        //structura unui pachet de tip message trebuie sa fie:
+        //data[0]- tipul de pachet
+        //data[1]- lungimea numelui destinatie
+        //data[2]- inceputul numelui destinatie
+        //data[sfarsit nume + 1]- lungimea mesajului
+        //data[sfarsit nume + 2]- mesaj transmis
+
         data[0] = PacketType.toInt(PacketType.MESSAGE);
         data[1] = (byte) destName.length();
         System.arraycopy(destName.getBytes(),0,data,2,destName.length());
@@ -291,6 +309,7 @@ public class Client {
         DatagramPacket packet = new DatagramPacket(data,data.length,server_addr,SERVER_PORT);
         try {
             manager.socket.send(packet);
+            System.out.println("Sent message to " + destName);
         }
         catch (IOException e){
             System.out.println("Failed to send message trough socket");
@@ -299,8 +318,10 @@ public class Client {
 
 
     private static String GetMessageFromPacket(byte[] data){
+        final int messageLengthOffset = data[1] + 2;
+        final int messageOffset = messageLengthOffset + 1;
 
-        return new String(data,data[1] + 2,data[1] + 1);
+        return new String(data,messageOffset,messageLengthOffset);
     }
 
     private void Disconnect(){

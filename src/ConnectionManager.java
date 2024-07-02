@@ -1,5 +1,6 @@
 import java.io.IOException;
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 
 public class ConnectionManager extends Thread{
 
@@ -33,7 +34,6 @@ public class ConnectionManager extends Thread{
         }
         System.out.println("Stopped thread");
         socket.close();
-        return;
     }
 
     public void GetIncomingPackages(){
