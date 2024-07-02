@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.logging.Logger;
 
 public class ConnectionManager extends Thread{
 
@@ -20,19 +21,18 @@ public class ConnectionManager extends Thread{
         //creating a network socket
         try {
             socket = new DatagramSocket(CLIENT_PORT);
-            System.out.println("Socket created");
         }
         catch (IOException e){
-            System.out.println("Caught exception when creating socket. " + e.getMessage());
+            Logger.getLogger(Client.class.getName()).warning("Caught exception when creating socket. " + e.getMessage());
         }
     }
 
     public void run(){
-        System.out.println("Started thread");
+        Logger.getLogger(Client.class.getName()).info("Started thread");
         while(receivingPackets){
             GetIncomingPackages();
         }
-        System.out.println("Stopped thread");
+        Logger.getLogger(Client.class.getName()).info("Stopped thread");
         socket.close();
     }
 
@@ -45,7 +45,7 @@ public class ConnectionManager extends Thread{
             packetReceived = true;
         }
         catch (IOException e) {
-            System.out.println("Caught exception at thread. " + e.getMessage());
+            Logger.getLogger(Client.class.getName()).warning("Caught exception at thread. " + e.getMessage());
         }
 
     }

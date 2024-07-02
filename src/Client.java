@@ -3,11 +3,10 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.*;
 
 public class Client {
     private enum PacketType{
@@ -16,7 +15,8 @@ public class Client {
         MESSAGE(2),
         ADDUSER(3),
         REMOVEUSER(4),
-        CONNECTCONFIRM(5);
+        CONNECTCONFIRM(5),
+        UNKNOWN(6);
 
         private final byte value;
 
@@ -30,7 +30,7 @@ public class Client {
                     return type;
                 }
             }
-            return null;
+            return UNKNOWN;
         }
         public static byte toInt(PacketType type) {
             return type.value;
@@ -52,14 +52,25 @@ public class Client {
     Vector<String> users;
     Vector<ChatWindow> chatWindows;
 
+    public Logger logger = Logger.getLogger(Client.class.getName());
+    Handler fileHandler;
+
     Client(){
         clientIsRunning = true;
         SERVER_PORT = 0;
         manager = new ConnectionManager();
         manager.start();
-        users = new Vector<String>(16);
-        chatWindows = new Vector<ChatWindow>(8);
+        users = new Vector<>(16);
+        chatWindows = new Vector<>(8);
 
+        logger.setLevel(Level.FINE);
+        try {
+            fileHandler = new FileHandler("./logs.txt");
+            fileHandler.setFormatter(new SimpleFormatter());
+
+            logger.addHandler(fileHandler);
+        }
+        catch (IOException ignored){}
     }
 
     public static void main(String[] args) {
@@ -70,36 +81,34 @@ public class Client {
         }
         client.DrawChatMenu();
 
-       while(client.clientIsRunning){
+        while(client.clientIsRunning){
 
-           if(client.manager.packetReceived){
+            if(client.manager.packetReceived){
 
-               DatagramPacket packet = client.manager.incomingPack;
-               byte[] data = packet.getData();
+                DatagramPacket packet = client.manager.incomingPack;
+                byte[] data = packet.getData();
 
-               //we get the first byte of the packet's data to find what kind of packet we have
-               switch (PacketType.fromInt(packet.getData()[0])) {
-                   case PacketType.MESSAGE    -> client.HandleReceivedMessage(packet);
-                   case PacketType.ADDUSER    -> client.HandleAddUser(packet);
-                   case PacketType.REMOVEUSER -> client.HandleRemoveUser(packet);
-                   case null -> {}
-                   default -> {System.out.println("Received unknown packet");}
-               }
-
-
-
-               client.manager.packetReceived = false;
+                //we get the first byte of the packet's data to find what kind of packet we have
+                switch (PacketType.fromInt(data[0])) {
+                    case PacketType.MESSAGE    -> client.HandleReceivedMessage(packet);
+                    case PacketType.ADDUSER    -> client.HandleAddUser(packet);
+                    case PacketType.REMOVEUSER -> client.HandleRemoveUser(packet);
+                    case PacketType.UNKNOWN -> client.logger.info("Pachet necunoscut primit");
+                }
+                client.manager.packetReceived = false;
            }
 
-           if(client.chatWindows.size() > 0) {
+           if(!client.chatWindows.isEmpty()) {
                for (int i = 0; i < client.chatWindows.size(); i++) {
 
                    if (!client.chatWindows.get(i).messageToSend.isEmpty()) {
-                       System.out.println("SEnding message " + client.chatWindows.get(i).messageToSend);
                        client.SendMessage(client.chatWindows.get(i).connectionName, client.chatWindows.get(i).messageToSend);
                        client.chatWindows.get(i).messageToSend = "";
                    }
-
+                   if(!client.chatWindows.get(i).enabled) {
+                       client.chatWindows.remove(i);
+                       client.logger.info("Fereastra chat inchisa");
+                   }
                }
            }
        }
@@ -121,8 +130,7 @@ public class Client {
                 this.SERVER_PORT = Integer.parseInt(serverInfo[1].getText());
                 this.CLIENT_NAME = serverInfo[2].getText();
                 if(TryToConnect()) {
-                    System.out.println("Connected to server using name: " + CLIENT_NAME);
-
+                    logger.info("Conectat la server folosind numele: " + CLIENT_NAME);
                     return true;
                 }
                 else{
@@ -183,10 +191,10 @@ public class Client {
 
         try {
             manager.socket.send(connect_packet);
-            System.out.println("A fost trimis pachetul de conectare la server!");
+            logger.info("A fost trimis pachetul de conectare la server");
         }
         catch (IOException ioe){
-            System.out.println("Eroare in a trimite pachetul pentru conectare la server!");
+            logger.warning("Eroare in a trimite pachetul pentru conectare la server!");
             return false;
         }
 
@@ -200,13 +208,13 @@ public class Client {
 
 
         if(!manager.packetReceived){
-            System.out.println("Nu a fost primit packetul de confirmare a conectarii la server!");
+            logger.info("Nu a fost primit packetul de confirmare a conectarii la server");
             return false;
         }
 
         DatagramPacket connectionConfirmed = manager.incomingPack;
         if (connectionConfirmed.getData()[0] == PacketType.CONNECTCONFIRM.value) {
-            System.out.println("A fost primit pachetul de confirmare!");
+            logger.info("A fost primit pachetul de confirmare");
             manager.packetReceived = false;
             return true;
         }
@@ -256,8 +264,10 @@ public class Client {
     }
 
     private void HandleReceivedMessage(DatagramPacket packet){
+        logger.info("A fost primit un mesaj");
+        byte[] data = packet.getData();
 
-        String messsageSrcName = new String(packet.getData(),2,packet.getData()[1]);
+        String messsageSrcName = new String(data,2,data[1]);
 
         for(ChatWindow i : chatWindows){
             if(i.connectionName.equals(messsageSrcName)){
@@ -311,10 +321,10 @@ public class Client {
         DatagramPacket packet = new DatagramPacket(data,data.length,server_addr,SERVER_PORT);
         try {
             manager.socket.send(packet);
-            System.out.println("Sent message to " + destName);
+            logger.info("Mesaj trimis catre " + destName);
         }
         catch (IOException e){
-            System.out.println("Failed to send message trough socket");
+            logger.warning("Eroare la trimitere mesaj");
         }
     }
 
@@ -329,12 +339,12 @@ public class Client {
         DatagramPacket disconnectPacket = new DatagramPacket(new byte[]{PacketType.toInt(PacketType.DISCONNECT)},1,server_addr,SERVER_PORT);
         try {
             manager.socket.send(disconnectPacket);
-            System.out.println("Disconnected from server");
+            logger.info("Deconectat de la server");
         }
         catch (IOException ignored){}
     }
     public void Close() {
-        System.out.println("Closing client");
+        logger.info("Inchidere client");
         manager.receivingPackets = false;
         if(frame != null)
             frame.dispose();

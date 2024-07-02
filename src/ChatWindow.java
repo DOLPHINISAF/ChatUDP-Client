@@ -1,7 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 
 public class ChatWindow{
 
@@ -10,8 +9,9 @@ public class ChatWindow{
     JTextArea inputArea;
     JButton send;
     public String connectionName;
-
+    boolean enabled;
     public String messageToSend;
+
     ChatWindow(String name){
         connectionName = name;
         frame = new JFrame("Chat with " + name);
@@ -20,7 +20,7 @@ public class ChatWindow{
         send = new JButton("Send Message");
         DrawChatWindow();
         messageToSend = "";
-
+        enabled = true;
     }
 
     private void DrawChatWindow(){
@@ -38,6 +38,15 @@ public class ChatWindow{
         frame.setLocation(300,300);
         inputArea.setRows(5);
         inputArea.setColumns(30);
+
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                enabled = false;
+                super.windowClosing(e);
+
+            }
+        });
 
         send.addActionListener(new ActionListener() {
             @Override
