@@ -8,7 +8,12 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.*;
 
+/**
+ * @author Nedelescu Catalin
+ * @version 1.0
+ */
 public class Client {
+    /** enum used to ID every sent/received packet */
     private enum PacketType{
         CONNECTREQUEST(0),
         DISCONNECT(1),
@@ -39,11 +44,14 @@ public class Client {
     private String CLIENT_NAME;
     private Inet4Address server_addr;
     private int SERVER_PORT;
-
+    /** a class used to interact with the network in a separate thread
+     */
     public ConnectionManager manager;
 
     private boolean clientIsRunning;
-
+    /**
+     * frame/button/... needed to create the window of the chat menu/ input field/ chat box
+     */
     JFrame frame;
     JButton message;
     JButton quit;
@@ -117,9 +125,7 @@ public class Client {
        client.Close();
 
     }
-
-
-    //all 3 used to establish connection with a server
+    /**all 3 used to establish connection with a server*/
     public boolean Conectare() {
         //[0]- IP server; [1]- PORT server; [2]- nume ales client
         JTextField[] serverInfo = DrawServerInput();// mai intai luam datele introduse pentru conectare
@@ -143,6 +149,10 @@ public class Client {
         }
         return false;
     }
+    /**
+     * displays a simple input field and returns an array of the entered values
+     * @return an {@code JTextField} value
+     */
     private JTextField[] DrawServerInput(){
         JTextField ip = new JTextField();
         JTextField port = new JTextField();
@@ -164,12 +174,16 @@ public class Client {
             return null;
         }
 
-        if(ip.getText().isEmpty() || port.getText().isEmpty() ||numeChat.getText().isEmpty()){
+        if(ip.getText().isEmpty() || port.getText().isEmpty() || numeChat.getText().isEmpty()){
             return null;
         }
 
         return new JTextField[]{ip,port,numeChat};
     }
+    /**
+     * sends a connectionrequest packet to the server and waits 1 second
+     * for a reply before either succesfully connecting or failing
+     */
     private boolean TryToConnect(){
 
 
@@ -221,7 +235,6 @@ public class Client {
 
         return false;
     }
-
     public void DrawChatMenu(){
 
 
@@ -267,12 +280,19 @@ public class Client {
         logger.info("A fost primit un mesaj");
         byte[] data = packet.getData();
 
-        String messsageSrcName = new String(data,2,data[1]);
-
+        String messageSrcName = new String(data,2,data[1]);
+        boolean chatwindowfound = false;
         for(ChatWindow i : chatWindows){
-            if(i.connectionName.equals(messsageSrcName)){
-                i.AddMessage(GetMessageFromPacket(packet.getData()),messsageSrcName);
+            if(i.connectionName.equals(messageSrcName)){
+                i.AddMessage(GetMessageFromPacket(packet.getData()),messageSrcName);
+                chatwindowfound = true;
             }
+        }
+
+        //if the user doesn't currently chat with the user that sent him a message we create the window
+        if(!chatwindowfound){
+            chatWindows.add(new ChatWindow(messageSrcName));
+            HandleReceivedMessage(packet);
         }
     }
     private void HandleAddUser(DatagramPacket packet){

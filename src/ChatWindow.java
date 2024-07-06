@@ -12,6 +12,10 @@ public class ChatWindow{
     boolean enabled;
     public String messageToSend;
 
+    /**
+     * when initialising it creates a chat box with input field and chat text connected to a single other user
+     * @param name the name of the user it is connected to
+     */
     ChatWindow(String name){
         connectionName = name;
         frame = new JFrame("Chat with " + name);
@@ -68,6 +72,12 @@ public class ChatWindow{
         frame.pack();
         frame.setVisible(true);
     }
+
+    /**
+     * called by the main class to add the received message from the server inside the chat box
+     * @param messsage the text to be added
+     * @param srcName the name of the person that sent the message
+     */
     public void AddMessage(String messsage, String srcName){
         chatArea.append(srcName + " :" + messsage + "\n");
     }

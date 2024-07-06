@@ -26,7 +26,9 @@ public class ConnectionManager extends Thread{
             Logger.getLogger(Client.class.getName()).warning("Caught exception when creating socket. " + e.getMessage());
         }
     }
-
+    /**
+     * when thread is started it continuosly receives packets from the newtwork until client is closed
+     */
     public void run(){
         Logger.getLogger(Client.class.getName()).info("Started thread");
         while(receivingPackets){
@@ -35,7 +37,6 @@ public class ConnectionManager extends Thread{
         Logger.getLogger(Client.class.getName()).info("Stopped thread");
         socket.close();
     }
-
     public void GetIncomingPackages(){
         //if we already received a packet we wait until it was read and used
         if(packetReceived) return;
@@ -47,6 +48,5 @@ public class ConnectionManager extends Thread{
         catch (IOException e) {
             Logger.getLogger(Client.class.getName()).warning("Caught exception at thread. " + e.getMessage());
         }
-
     }
 }
