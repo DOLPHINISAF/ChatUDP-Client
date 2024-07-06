@@ -157,9 +157,6 @@ public class Client {
         JTextField ip = new JTextField();
         JTextField port = new JTextField();
         JTextField numeChat = new JTextField();
-        ip.setText("192.168.1.104");
-        port.setText("1337");
-        numeChat.setText("cata");
         final JComponent[] optiuni = new JComponent[]{
                 new JLabel("IP:"),
                 ip,

@@ -37,6 +37,8 @@ public class ChatWindow{
         chatArea.setCaretColor(Color.GRAY);
         chatArea.setColumns(45);
         chatArea.setRows(15);
+        Font font = new Font(chatArea.getFont().getFontName(),chatArea.getFont().getStyle(),20);
+        chatArea.setFont(font);
         frame.setResizable(false);
         frame.setLayout(layout);
         frame.setLocation(300,300);
