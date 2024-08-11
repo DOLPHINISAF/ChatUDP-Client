@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 public class ConnectionManager extends Thread{
@@ -42,6 +43,8 @@ public class ConnectionManager extends Thread{
         if(packetReceived) return;
 
         try {
+            if(Objects.isNull(socket))
+                throw new IOException("Socket is null!");
             socket.receive(incomingPack);
             packetReceived = true;
         }

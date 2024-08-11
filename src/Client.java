@@ -116,6 +116,7 @@ public class Client {
                    if(!client.chatWindows.get(i).enabled) {
                        client.chatWindows.remove(i);
                        client.logger.info("Fereastra chat inchisa");
+                       return;
                    }
                }
            }
@@ -278,19 +279,16 @@ public class Client {
         byte[] data = packet.getData();
 
         String messageSrcName = new String(data,2,data[1]);
-        boolean chatwindowfound = false;
         for(ChatWindow i : chatWindows){
             if(i.connectionName.equals(messageSrcName)){
                 i.AddMessage(GetMessageFromPacket(packet.getData()),messageSrcName);
-                chatwindowfound = true;
+                return;
             }
         }
 
         //if the user doesn't currently chat with the user that sent him a message we create the window
-        if(!chatwindowfound){
-            chatWindows.add(new ChatWindow(messageSrcName));
-            HandleReceivedMessage(packet);
-        }
+        chatWindows.add(new ChatWindow(messageSrcName));
+        HandleReceivedMessage(packet);
     }
     private void HandleAddUser(DatagramPacket packet){
         //structura unui pachet de tip remove user trebuie sa fie:
@@ -314,6 +312,7 @@ public class Client {
             if(users.get(i).equals(removedUserName)){
                 listmodel.removeElementAt(i);
                 users.remove(i);
+                return;
             }
         }
 
